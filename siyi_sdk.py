@@ -88,9 +88,15 @@ class SIYISDK:
         self._request_data_stream_msg = RequestDataStreamMsg()
         self._request_absolute_zoom_msg = RequestAbsoluteZoomMsg()
         self._current_zoom_level_msg = CurrentZoomValueMsg()
+        # Recording stream
         self._recording_stream_encoding_msg = RequestEncodingParamsMsg(0)
+        self._set_recording_stream_encoding_msg = SetEncodingParamsMsg(0)
+        # Main stream
         self._main_stream_encoding_msg = RequestEncodingParamsMsg(1)
+        self._set_main_stream_encoding_msg = SetEncodingParamsMsg(1)
+        # Sub stream
         self._sub_stream_encoding_msg = RequestEncodingParamsMsg(2)
+        self._set_sub_stream_encoding_msg = SetEncodingParamsMsg(2)
         self._last_att_seq = -1
 
         return True

@@ -130,6 +130,14 @@ class RequestEncodingParamsMsg:
     def __init__(self, stream_type: int):
         self.stream_type = stream_type
 
+class SetEncodingParamsMsg:
+    seq = 0
+    stream_type = 0
+    success = False
+
+    def __init__(self, stream_type: int):
+        self.stream_type = stream_type
+
 class COMMAND:
     ACQUIRE_FW_VER = '01'
     ACQUIRE_HW_ID = '02'
