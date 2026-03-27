@@ -88,6 +88,9 @@ class SIYISDK:
         self._request_data_stream_msg = RequestDataStreamMsg()
         self._request_absolute_zoom_msg = RequestAbsoluteZoomMsg()
         self._current_zoom_level_msg = CurrentZoomValueMsg()
+        self._recording_stream_encoding_msg = RequestEncodingParamsMsg(0)
+        self._main_stream_encoding_msg = RequestEncodingParamsMsg(1)
+        self._sub_stream_encoding_msg = RequestEncodingParamsMsg(2)
         self._last_att_seq = -1
 
         return True
@@ -372,6 +375,8 @@ class SIYISDK:
                 self.parseRequestStreamMsg()
             elif cmd_id==COMMAND.CURRENT_ZOOM_VALUE:
                 self.parseCurrentZoomLevelMsg(data, seq)
+            elif cmd_id==COMMAND.ACQUIRE_ENCODING_INFO:
+                self.parseRequestCameraEncodingParametersMsg(data, seq)
             else:
                 self._logger.warning("CMD ID is not recognized")
         
@@ -698,6 +703,21 @@ class SIYISDK:
         msg = self._out_msg.dataStreamMsg(2, freq)
         return self.sendMsg(msg)
 
+    def requestCameraEncodingParameters(self, stream_type: int):
+        """
+        Send request to acquire camera encoding parameters
+
+        Params
+        --
+        stream_type [int] 0: Recording stream, 1: Main stream, 2: Sub-stream
+
+        Returns
+        --
+        [bool] True: success. False: fail
+        """
+        msg = self._out_msg.requestCameraEncodingParametersMsg(stream_type)
+        return self.sendMsg(msg)
+
     ####################################################
     #                Parsing functions                 #
     ####################################################
@@ -890,6 +910,35 @@ class SIYISDK:
             self._logger.error("Error %s", e)
             return False
 
+    def parseRequestCameraEncodingParametersMsg(self, msg: str, seq: int):
+        try:
+            stream_type = int(msg[0:2], base=16)
+            encoding_type = int(msg[2:4], base=16)
+            resolution_width = int(msg[6:8] + msg[4:6], base=16)
+            resolution_height = int(msg[10:12] + msg[8:10], base=16,)
+            video_kbps = int(msg[14:16] + msg[12:14], base=16)
+            video_frame_rate = int(msg[16:18], base=16)
+            param_msg = None
+            if stream_type == 0:
+                param_msg = self._recording_stream_encoding_msg
+            elif stream_type == 1:
+                param_msg = self._main_stream_encoding_msg
+            elif stream_type == 2:
+                param_msg = self._sub_stream_encoding_msg
+            else:
+                raise RuntimeError("Unknown stream_type")
+            param_msg.seq = seq
+            param_msg.stream_type = stream_type
+            param_msg.encoding_type = encoding_type
+            param_msg.resolution_width = resolution_width
+            param_msg.resolution_height = resolution_height
+            param_msg.video_kbps = video_kbps
+            param_msg.video_frame_rate = video_frame_rate
+            return True
+        except Exception as e:
+            self._logger.error("Error %s", e)
+            return False
+
 
     ##################################################
     #                   Get functions                #
@@ -932,6 +981,25 @@ class SIYISDK:
     
     def getDataStreamFeedback(self):
         return(self._request_data_stream_msg.data_type)
+    
+    def getCameraEncodingParameters(self, stream_type: int):
+        param_msg = None
+        if stream_type == 0:
+            param_msg = self._recording_stream_encoding_msg
+        elif stream_type == 1:
+            param_msg = self._main_stream_encoding_msg
+        elif stream_type == 2:
+            param_msg = self._sub_stream_encoding_msg
+        else:
+            return None
+        return (
+            param_msg.stream_type,
+            param_msg.encoding_type,
+            param_msg.resolution_width,
+            param_msg.resolution_height,
+            param_msg.video_kbps,
+            param_msg.video_frame_rate
+        )
 
     #################################################
     #                 Set functions                 #

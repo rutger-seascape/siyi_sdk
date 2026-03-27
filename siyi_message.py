@@ -118,6 +118,18 @@ class  CurrentZoomValueMsg:
     float_part = 0
     level=0.0
 
+class RequestEncodingParamsMsg:
+    seq = 0
+    stream_type = 0
+    encoding_type = 0
+    resolution_width = 0
+    resolution_height = 0
+    video_kbps = 0
+    video_frame_rate = 0
+
+    def __init__(self, stream_type: int):
+        self.stream_type = stream_type
+
 class COMMAND:
     ACQUIRE_FW_VER = '01'
     ACQUIRE_HW_ID = '02'
@@ -134,6 +146,7 @@ class COMMAND:
     SET_DATA_STREAM = '25'
     ABSOLUTE_ZOOM = '0f'
     CURRENT_ZOOM_VALUE = '18'
+    ACQUIRE_ENCODING_INFO = '20'
 
 
 #############################################
@@ -583,4 +596,17 @@ class SIYIMESSAGE:
     def requestCurrentZoomMsg(self):
         data=""
         cmd_id = COMMAND.CURRENT_ZOOM_VALUE
+        return self.encodeMsg(data, cmd_id)
+
+    def requestCameraEncodingParametersMsg(self, stream_type: int):
+        """
+        Params
+        --
+        - stream_type [int] 0: Recording stream, 1: Main stream, 2: Sub-stream
+        """
+        if stream_type not in range(0, 3):
+            self._logger.error(f"Stream type {stream_type} not supported. Not requesting camera encoding parameters.")
+            return ''
+        data = toHex(stream_type, 8)
+        cmd_id = COMMAND.ACQUIRE_ENCODING_INFO
         return self.encodeMsg(data, cmd_id)
