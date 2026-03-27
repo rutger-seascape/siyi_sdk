@@ -383,6 +383,8 @@ class SIYISDK:
                 self.parseCurrentZoomLevelMsg(data, seq)
             elif cmd_id==COMMAND.ACQUIRE_ENCODING_INFO:
                 self.parseRequestCameraEncodingParametersMsg(data, seq)
+            elif cmd_id==COMMAND.SET_ENCODING_INFO:
+                self.parseSetCameraEncodingParametersMsg(data, seq)
             else:
                 self._logger.warning("CMD ID is not recognized")
         
@@ -945,6 +947,26 @@ class SIYISDK:
             self._logger.error("Error %s", e)
             return False
 
+    def parseSetCameraEncodingParametersMsg(self, msg: str, seq: int):
+        try:
+            stream_type = int(msg[0:2], base=16)
+            status = int(msg[2:4], base=16)
+            set_param_msg = None
+            if stream_type == 0:
+                set_param_msg = self._set_recording_stream_encoding_msg
+            elif stream_type == 1:
+                set_param_msg = self._set_main_stream_encoding_msg
+            elif stream_type == 2:
+                set_param_msg = self._set_sub_stream_encoding_msg
+            else:
+                raise RuntimeError("Unknown stream_type")
+            set_param_msg.stream_type = stream_type
+            set_param_msg.success = bool(status)
+            return True
+        except Exception as e:
+            self._logger.error("Error %s", e)
+            return False
+
 
     ##################################################
     #                   Get functions                #
@@ -1007,6 +1029,18 @@ class SIYISDK:
             param_msg.video_frame_rate
         )
 
+    def getCameraEncodingParametersFeedback(self, stream_type: int):
+        set_param_msg = None
+        if stream_type == 0:
+            set_param_msg = self._set_recording_stream_encoding_msg
+        elif stream_type == 1:
+            set_param_msg = self._set_main_stream_encoding_msg
+        elif stream_type == 2:
+            set_param_msg = self._set_sub_stream_encoding_msg
+        else:
+            return None
+        return set_param_msg.success
+
     #################################################
     #                 Set functions                 #
     #################################################
@@ -1058,6 +1092,41 @@ class SIYISDK:
             self.requestGimbalSpeed(y_speed_sp, p_speed_sp)
 
             sleep(0.1) # command frequency
+
+    def setCameraEncodingParameters(
+            self, stream_type: int, encoding_type: int, resolution_width: int,
+            resolution_height: int, video_kbps: int
+        ):
+        """
+        Params
+        --
+        - stream_type [int] 0: Recording stream, 1: Main stream, 2: Sub-stream
+        - encoding_type [int] 1: H264, 2: H265 (cannot modify the format for the recording stream)
+        - resolution_width [int] Supported resolutions are device specific
+        - resolution_height [int] Supported resolutions are device specific
+        - video_kbps [int] Fixed bitrate in Kilobytes per second
+        """
+        if self._hw_msg.cam_type_str == '':
+            self._logger.error(f"Gimbal type is not yet retrieved. Check connection.")
+            return False
+        camera = None
+        if self._hw_msg.cam_type_str == 'A8 mini':
+            camera = cameras.A8MINI
+        elif self._hw_msg.cam_type_str == 'ZR10':
+            camera = cameras.ZR10
+        else:
+            self._logger.warning(f"Camera not supported. Not setting camera encoding parameters")
+            return False
+
+        if stream_type == 0 and (resolution_width, resolution_height) not in camera.RECORDING_RESOLUTIONS:
+            self._logger.error(f"Resolution of {resolution_width} x {resolution_height} not supported. Not setting camera encoding parameters")
+            return False
+
+        msg = self._out_msg.setCameraEncodingParametersMsg(
+            stream_type, encoding_type, resolution_width, resolution_height,
+            video_kbps
+        )
+        return self.sendMsg(msg)
 
 def test():
     cam=SIYISDK(debug=False)
