@@ -11,6 +11,13 @@ RESOLUTIONS = {
 }
 
 class A8MINI:
+    """
+    The following bit rates seem to apply for the various streams:
+    - recording stream: min 15k kbps, max 30k kbps
+    - main/sub stream: min 1001 kbps, max 4k kpbs
+    --
+    Streaming resolutions: 480p, 720p, 1080p, 2K
+    """
     MAX_YAW_DEG = 135.0
     MIN_YAW_DEG = -135.0
     MAX_PITCH_DEG = 25.0
