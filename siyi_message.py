@@ -118,6 +118,26 @@ class  CurrentZoomValueMsg:
     float_part = 0
     level=0.0
 
+class RequestEncodingParamsMsg:
+    seq = 0
+    stream_type = 0
+    encoding_type = 0
+    resolution_width = 0
+    resolution_height = 0
+    video_kbps = 0
+    video_frame_rate = 0
+
+    def __init__(self, stream_type: int):
+        self.stream_type = stream_type
+
+class SetEncodingParamsMsg:
+    seq = 0
+    stream_type = 0
+    success = False
+
+    def __init__(self, stream_type: int):
+        self.stream_type = stream_type
+
 class COMMAND:
     ACQUIRE_FW_VER = '01'
     ACQUIRE_HW_ID = '02'
@@ -134,6 +154,8 @@ class COMMAND:
     SET_DATA_STREAM = '25'
     ABSOLUTE_ZOOM = '0f'
     CURRENT_ZOOM_VALUE = '18'
+    ACQUIRE_ENCODING_INFO = '20'
+    SET_ENCODING_INFO = '21'
 
 
 #############################################
@@ -583,4 +605,46 @@ class SIYIMESSAGE:
     def requestCurrentZoomMsg(self):
         data=""
         cmd_id = COMMAND.CURRENT_ZOOM_VALUE
+        return self.encodeMsg(data, cmd_id)
+
+    def requestCameraEncodingParametersMsg(self, stream_type: int):
+        """
+        Params
+        --
+        - stream_type [int] 0: Recording stream, 1: Main stream, 2: Sub-stream
+        """
+        if stream_type not in range(0, 3):
+            self._logger.error(f"Stream type {stream_type} not supported. Not requesting camera encoding parameters.")
+            return ''
+        data = toHex(stream_type, 8)
+        cmd_id = COMMAND.ACQUIRE_ENCODING_INFO
+        return self.encodeMsg(data, cmd_id)
+
+    def setCameraEncodingParametersMsg(
+            self, stream_type: int, encoding_type: int, resolution_width: int,
+            resolution_height: int, video_kbps: int
+        ):
+        """
+        Params
+        --
+        - stream_type [int] 0: Recording stream, 1: Main stream, 2: Sub-stream
+        - encoding_type [int] 1: H264, 2: H265 (cannot modify the format for the recording stream)
+        - resolution_width [int] Supported resolutions are device specific
+        - resolution_height [int] Supported resolutions are device specific
+        - video_kbps [int]
+        """
+        if stream_type not in range(0, 3):
+            self._logger.error(f"Stream type {stream_type} not supported. Not setting camera encoding parameters.")
+            return ''
+        if encoding_type not in range(1, 3):
+            self._logger.error(f"Encoding type {encoding_type} not supported. Not setting camera encoding parameters.")
+            return ''
+        cmd_id = COMMAND.SET_ENCODING_INFO
+        data = (toHex(stream_type, 8) +
+            toHex(encoding_type, 8) +
+            toHex(resolution_width, 16) +
+            toHex(resolution_height, 16) +
+            toHex(video_kbps, 16) +
+            toHex(0, 8)
+        )
         return self.encodeMsg(data, cmd_id)
