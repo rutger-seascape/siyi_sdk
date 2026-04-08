@@ -138,6 +138,11 @@ class SetEncodingParamsMsg:
     def __init__(self, stream_type: int):
         self.stream_type = stream_type
 
+class SoftRebootMsg:
+    seq = 0
+    camera_reboot = False
+    gimbal_reboot = False
+
 class COMMAND:
     ACQUIRE_FW_VER = '01'
     ACQUIRE_HW_ID = '02'
@@ -156,6 +161,7 @@ class COMMAND:
     CURRENT_ZOOM_VALUE = '18'
     ACQUIRE_ENCODING_INFO = '20'
     SET_ENCODING_INFO = '21'
+    SOFT_REBOOT = '80'
 
 
 #############################################
@@ -647,4 +653,15 @@ class SIYIMESSAGE:
             toHex(video_kbps, 16) +
             toHex(0, 8)
         )
+        return self.encodeMsg(data, cmd_id)
+
+    def requestGimbalCameraSoftRebootMsg(self, reboot_camera=False, reboot_gimbal=False):
+        """
+        Params
+        --
+        - reboot_camera [bool] True: Request to reboot the camera, False: Take no action
+        - reboot_gimbal [bool] True: Request to reboot the gimbal, False: Take no action
+        """
+        cmd_id = COMMAND.SOFT_REBOOT
+        data = toHex(int(reboot_camera), 8) + toHex(int(reboot_gimbal), 8)
         return self.encodeMsg(data, cmd_id)
