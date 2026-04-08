@@ -43,9 +43,7 @@ class SIYISDK:
 
         self._BUFF_SIZE = 1024
 
-        self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self._rcv_wait_t = 5  # Receiving wait time
-        self._socket.settimeout(self._rcv_wait_t)
+        self.initializeSocket()
 
         self.resetVars()
 
@@ -66,6 +64,11 @@ class SIYISDK:
         # Gimbal attitude thread @ 10Hz
         self._gimbal_att_loop_rate = 0.02
         self._g_att_thread = threading.Thread(target=self.gimbalAttLoop, args=(self._gimbal_att_loop_rate,))
+
+    def initializeSocket(self):
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self._rcv_wait_t = 5  # Receiving wait time
+        self._socket.settimeout(self._rcv_wait_t)
 
     def resetVars(self):
         """
