@@ -13,7 +13,13 @@ import logging
 from utils import  toInt
 import threading
 import cameras
+from enum import IntEnum, auto
 
+class HookType(IntEnum):
+    PRE_SEND = 0
+    POST_SEND = auto()
+    PRE_RECV = auto()
+    POST_RECV = auto()
 
 class SIYISDK:
     def __init__(self, server_ip="192.168.144.25", port=37260, debug=False):
@@ -66,6 +72,12 @@ class SIYISDK:
         # Gimbal attitude thread @ 10Hz
         self._gimbal_att_loop_rate = 0.02
         self._g_att_thread = threading.Thread(target=self.gimbalAttLoop, args=(self._gimbal_att_loop_rate,))
+
+        # Hooks
+        self._post_send_hooks = {}
+        self._pre_send_hooks = {}
+        self._pre_recv_hooks = {}
+        self._post_recv_hooks = {}
 
     def resetVars(self):
         """
@@ -284,7 +296,9 @@ class SIYISDK:
         """
         b = bytes.fromhex(msg)
         try:
-            self._socket.sendto(b, (self._server_ip, self._port))
+            self._executeHooks(HookType.PRE_SEND, msg=msg)
+            bytes_sent = self._socket.sendto(b, (self._server_ip, self._port))
+            self._executeHooks(HookType.POST_SEND, bytes_sent=bytes_sent)
             return True
         except Exception as e:
             self._logger.error("Could not send bytes")
@@ -310,6 +324,7 @@ class SIYISDK:
         Receives messages and parses its content
         """
         try:
+            self._executeHooks(HookType.PRE_RECV)
             buff,addr = self._socket.recvfrom(self._BUFF_SIZE)
         except Exception as e:
             self._logger.error(f"[bufferCallback] {e}")
@@ -354,6 +369,7 @@ class SIYISDK:
                 continue
             
             data, data_len, cmd_id, seq = val[0], val[1], val[2], val[3]
+            self._executeHooks(HookType.POST_RECV, data=data, data_len=data_len, cmd_id=cmd_id, seq=seq)
 
             if cmd_id==COMMAND.ACQUIRE_FW_VER:
                 self.parseFirmwareMsg(data, seq)
@@ -1127,6 +1143,65 @@ class SIYISDK:
             video_kbps
         )
         return self.sendMsg(msg)
+
+    #################################################
+    #                 Hooks                         #
+    #################################################
+    def _getHooks(self, hook_type: HookType) -> dict:
+        match hook_type:
+            case HookType.PRE_SEND:
+                return self._pre_send_hooks
+            case HookType.POST_SEND:
+                return self._post_send_hooks
+            case HookType.PRE_RECV:
+                return self._pre_recv_hooks
+            case HookType.POST_RECV:
+                return self._post_recv_hooks
+
+    def installHook(self, hook_type: HookType, func, *args):
+        """
+        :param HookType hook_type: This decides when the hook gets called
+        :param Callable func: The function to execute
+        :param `*args`: Arguments to supply to the function
+
+        You can get access to different keyword arguments based on ``hook_type`` if you add ``**kwargs``
+        in your function definition:
+
+        ``HookType.PRE_SEND``
+        :param str msg: The message that will be send to the camera
+
+        ``HookType.POST_SEND``
+        :param int bytes_sent: The amount of bytes written
+
+        ``HookType.PRE_RECV``
+        - No keyword arguments
+
+        ``HookType.POST_RECV``
+        :param str data: The message received
+        :param int data_len: The length of data received
+        :param str cmd_id: The command id that requested a response
+        :param int seq: The sequence number
+        """
+        hooks = self._getHooks(hook_type)
+        hooks[func] = args
+ 
+    def removeHook(self, hook_type: HookType, func):
+        hooks = self._getHooks(hook_type)
+        del hooks[func]
+
+    def _executeHooks(self, hook_type: HookType, **kwargs):
+        hooks = self._getHooks(hook_type)
+        for func, args in hooks.copy().items():
+            if args:
+                if kwargs:
+                    func(*args, **kwargs)
+                else:
+                    func(*args)
+            else:
+                if kwargs:
+                    func(**kwargs)
+                else:
+                    func()
 
 def test():
     cam=SIYISDK(debug=False)
