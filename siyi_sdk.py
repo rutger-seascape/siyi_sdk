@@ -376,7 +376,6 @@ class SIYISDK:
                 continue
             
             data, data_len, cmd_id, seq = val[0], val[1], val[2], val[3]
-            self._executeHooks(HookType.POST_RECV, data=data, data_len=data_len, cmd_id=cmd_id, seq=seq)
 
             if cmd_id==COMMAND.ACQUIRE_FW_VER:
                 self.parseFirmwareMsg(data, seq)
@@ -413,6 +412,7 @@ class SIYISDK:
             else:
                 self._logger.warning("CMD ID is not recognized")
         
+            self._executeHooks(HookType.POST_RECV, data=data, data_len=data_len, cmd_id=cmd_id, seq=seq)
         return
     
     ##################################################
