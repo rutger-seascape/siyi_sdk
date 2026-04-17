@@ -750,7 +750,6 @@ class SIYISDK:
         [bool] True: success. False: fail
         """
         msg = self._out_msg.formatSdCardMsg()
-        print(msg)
         return self.sendMsg(msg)
 
     ####################################################
