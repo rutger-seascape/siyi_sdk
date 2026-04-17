@@ -138,6 +138,10 @@ class SetEncodingParamsMsg:
     def __init__(self, stream_type: int):
         self.stream_type = stream_type
 
+class FormatSdCardMsg:
+    seq = 0
+    success = False
+
 class COMMAND:
     ACQUIRE_FW_VER = '01'
     ACQUIRE_HW_ID = '02'
@@ -156,6 +160,7 @@ class COMMAND:
     CURRENT_ZOOM_VALUE = '18'
     ACQUIRE_ENCODING_INFO = '20'
     SET_ENCODING_INFO = '21'
+    FORMAT_SD_CARD = '48'
 
 
 #############################################
@@ -647,4 +652,12 @@ class SIYIMESSAGE:
             toHex(video_kbps, 16) +
             toHex(0, 8)
         )
+        return self.encodeMsg(data, cmd_id)
+
+    def formatSdCardMsg(self):
+        """
+        Format the microSD-card that's on the camera
+        """
+        data=""
+        cmd_id = COMMAND.FORMAT_SD_CARD
         return self.encodeMsg(data, cmd_id)
