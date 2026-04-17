@@ -143,6 +143,10 @@ class SoftRebootMsg:
     camera_reboot = False
     gimbal_reboot = False
 
+class FormatSdCardMsg:
+    seq = 0
+    success = False
+
 class COMMAND:
     ACQUIRE_FW_VER = '01'
     ACQUIRE_HW_ID = '02'
@@ -162,6 +166,7 @@ class COMMAND:
     ACQUIRE_ENCODING_INFO = '20'
     SET_ENCODING_INFO = '21'
     SOFT_REBOOT = '80'
+    FORMAT_SD_CARD = '48'
 
 
 #############################################
@@ -664,4 +669,12 @@ class SIYIMESSAGE:
         """
         cmd_id = COMMAND.SOFT_REBOOT
         data = toHex(int(reboot_camera), 8) + toHex(int(reboot_gimbal), 8)
+        return self.encodeMsg(data, cmd_id)
+
+    def formatSdCardMsg(self):
+        """
+        Format the microSD-card that's on the camera
+        """
+        data=""
+        cmd_id = COMMAND.FORMAT_SD_CARD
         return self.encodeMsg(data, cmd_id)
