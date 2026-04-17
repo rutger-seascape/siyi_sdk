@@ -960,6 +960,7 @@ class SIYISDK:
                 set_param_msg = self._set_sub_stream_encoding_msg
             else:
                 raise RuntimeError("Unknown stream_type")
+            set_param_msg.seq = seq
             set_param_msg.stream_type = stream_type
             set_param_msg.success = bool(status)
             return True
