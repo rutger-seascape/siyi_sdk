@@ -3,7 +3,7 @@ This script defines the camera specs
 """
 
 RESOLUTIONS = {
-    "4K": (4096, 2160),
+    "4K": (3840, 2160),
     "2K": (2560, 1440),
     "1080p": (1920, 1080),
     "720p": (1280, 720),
