@@ -43,9 +43,7 @@ class SIYISDK:
 
         self._BUFF_SIZE = 1024
 
-        self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self._rcv_wait_t = 5  # Receiving wait time
-        self._socket.settimeout(self._rcv_wait_t)
+        self.initializeSocket()
 
         self.resetVars()
 
@@ -66,6 +64,11 @@ class SIYISDK:
         # Gimbal attitude thread @ 10Hz
         self._gimbal_att_loop_rate = 0.02
         self._g_att_thread = threading.Thread(target=self.gimbalAttLoop, args=(self._gimbal_att_loop_rate,))
+
+    def initializeSocket(self):
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self._rcv_wait_t = 5  # Receiving wait time
+        self._socket.settimeout(self._rcv_wait_t)
 
     def resetVars(self):
         """
@@ -97,6 +100,10 @@ class SIYISDK:
         # Sub stream
         self._sub_stream_encoding_msg = RequestEncodingParamsMsg(2)
         self._set_sub_stream_encoding_msg = SetEncodingParamsMsg(2)
+
+        # Preserve results between reboots
+        if not hasattr(self, "_soft_reboot_msg"):
+            self._soft_reboot_msg = SoftRebootMsg
         self._last_att_seq = -1
 
         return True
@@ -385,6 +392,8 @@ class SIYISDK:
                 self.parseRequestCameraEncodingParametersMsg(data, seq)
             elif cmd_id==COMMAND.SET_ENCODING_INFO:
                 self.parseSetCameraEncodingParametersMsg(data, seq)
+            elif cmd_id==COMMAND.SOFT_REBOOT:
+                self.parseGimbalCameraSoftRebootMsg(data, seq)
             else:
                 self._logger.warning("CMD ID is not recognized")
         
@@ -726,6 +735,37 @@ class SIYISDK:
         msg = self._out_msg.requestCameraEncodingParametersMsg(stream_type)
         return self.sendMsg(msg)
 
+    def requestGimbalCameraSoftReboot(self, reboot_camera=False, reboot_gimbal=False, reboot_msg_timeout_sec=0.2, reboot_cam_wait_sec=30):
+        """
+        Send request to reboot the camera, gimbal or both
+
+        The .connect() method needs to be called again if reboot_camera is True
+
+        Params
+        --
+        - reboot_camera [bool] True: Request to reboot the camera, False: Take no action
+        - reboot_gimbal [bool] True: Request to reboot the gimbal, False: Take no action
+        - reboot_msg_timeout_sec [float] The time to wait in seconds after sending the message
+        - reboot_cam_wait_sec [float] The time to wait in seconds after requesting the camera to reboot;
+          SIYI states that camera system requires a startup time of up to 30 seconds
+
+        Returns
+        --
+        [bool] True: success. False: fail
+        """
+        msg = self._out_msg.requestGimbalCameraSoftRebootMsg(reboot_camera, reboot_gimbal)
+        result = self.sendMsg(msg)
+        if not result:
+            return result
+        sleep(reboot_msg_timeout_sec)
+        if not reboot_camera:
+            return result
+        self.disconnect()
+        self.initializeSocket()
+        self._logger.info(f"Camera reboot requested, sleeping for {reboot_cam_wait_sec}...")
+        sleep(reboot_cam_wait_sec)
+        return result
+
     ####################################################
     #                Parsing functions                 #
     ####################################################
@@ -967,6 +1007,17 @@ class SIYISDK:
             self._logger.error("Error %s", e)
             return False
 
+    def parseGimbalCameraSoftRebootMsg(self, msg: str, seq: int):
+        try:
+            camera_reboot = bool(int(msg[0:2], base=16))
+            gimbal_reboot = bool(int(msg[2:4], base=16))
+            self._soft_reboot_msg.seq = seq
+            self._soft_reboot_msg.camera_reboot = camera_reboot
+            self._soft_reboot_msg.gimbal_reboot = gimbal_reboot
+            return True
+        except Exception as e:
+            self._logger.error("Error %s", e)
+            return False
 
     ##################################################
     #                   Get functions                #
@@ -1040,6 +1091,12 @@ class SIYISDK:
         else:
             return None
         return set_param_msg.success
+
+    def getGimbalRebooted(self):
+        return self._soft_reboot_msg.gimbal_reboot
+
+    def getCameraRebooted(self):
+        return self._soft_reboot_msg.camera_reboot
 
     #################################################
     #                 Set functions                 #
