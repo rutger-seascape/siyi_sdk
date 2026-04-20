@@ -91,6 +91,7 @@ class SIYISDK:
         self._request_data_stream_msg = RequestDataStreamMsg()
         self._request_absolute_zoom_msg = RequestAbsoluteZoomMsg()
         self._current_zoom_level_msg = CurrentZoomValueMsg()
+        self._format_sd_card_msg = FormatSdCardMsg()
         # Recording stream
         self._recording_stream_encoding_msg = RequestEncodingParamsMsg(0)
         self._set_recording_stream_encoding_msg = SetEncodingParamsMsg(0)
@@ -394,6 +395,8 @@ class SIYISDK:
                 self.parseSetCameraEncodingParametersMsg(data, seq)
             elif cmd_id==COMMAND.SOFT_REBOOT:
                 self.parseGimbalCameraSoftRebootMsg(data, seq)
+            elif cmd_id==COMMAND.FORMAT_SD_CARD:
+                self.parseFormatSdCardMsg(data, seq)
             else:
                 self._logger.warning("CMD ID is not recognized")
         
@@ -766,6 +769,29 @@ class SIYISDK:
         sleep(reboot_cam_wait_sec)
         return result
 
+    def requestFormatSdCard(self):
+        """
+        Sends request for formatting the microSD-card
+
+        !!!WARNING!!!
+        Calling this function will delete all of the files on the microSD-card
+
+        SIYI A8 Mini
+        There seems to be a bug when calling this function after calling \"0x0A: Request Camera System Information\" causing
+        a response of command \"0x82: Set Gimbal Camera IP Address\" to be returned. This is strange because the SIYI SDK documentation
+        states (Appendix 2: Control Command Support List, UDP Interface table) the following for this function (\"0x48: Format SD Card\"):
+    
+            \"ZT30, ZR30 and A8 mini no response.\"
+        
+        The 0x82 response seems like a bug in the SDK and it does not do anything.
+
+        Returns
+        --
+        [bool] True: success. False: fail
+        """
+        msg = self._out_msg.formatSdCardMsg()
+        return self.sendMsg(msg)
+
     ####################################################
     #                Parsing functions                 #
     ####################################################
@@ -1015,6 +1041,14 @@ class SIYISDK:
             self._soft_reboot_msg.seq = seq
             self._soft_reboot_msg.camera_reboot = camera_reboot
             self._soft_reboot_msg.gimbal_reboot = gimbal_reboot
+        except Exception as e:
+            self._logger.error("Error %s", e)
+            return False
+
+    def parseFormatSdCardMsg(self, msg: str, seq: int):
+        try:
+            self._format_sd_card_msg.seq = seq
+            self._format_sd_card_msg.success = bool(int('0x'+msg, base=16))
             return True
         except Exception as e:
             self._logger.error("Error %s", e)
@@ -1098,6 +1132,9 @@ class SIYISDK:
 
     def getCameraRebooted(self):
         return self._soft_reboot_msg.camera_reboot
+
+    def getFormatSdCardFeedback(self):
+        return self._format_sd_card_msg.success
 
     #################################################
     #                 Set functions                 #
