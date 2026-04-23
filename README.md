@@ -1,7 +1,7 @@
-# siyi-sdk
+# SIYI SDK v2
 
-[![CI Status](https://github.com/mzahana/siyi-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/mzahana/siyi-sdk/actions)
-[![codecov](https://codecov.io/gh/mzahana/siyi-sdk/branch/main/graph/badge.svg)](https://codecov.io/gh/mzahana/siyi-sdk)
+[![CI Status](https://github.com/mzahana/siyi_sdk/actions/workflows/ci.yml/badge.svg?branch=siyi-sdk-v2)](https://github.com/mzahana/siyi_sdk/actions/workflows/ci.yml?query=branch%3Asiyi-sdk-v2)
+[![codecov](https://codecov.io/gh/mzahana/siyi_sdk/branch/siyi-sdk-v2/graph/badge.svg)](https://codecov.io/gh/mzahana/siyi_sdk/tree/siyi-sdk-v2)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Async Python SDK for the SIYI Gimbal Camera External SDK Protocol v0.1.1.
@@ -17,8 +17,8 @@ The SIYI SDK provides a comprehensive, type-safe, and asyncio-native Python inte
 Clone the repository and install in development mode:
 
 ```bash
-git clone https://github.com/mzahana/siyi-sdk.git
-cd siyi-sdk
+git clone -b siyi-sdk-v2 https://github.com/mzahana/siyi_sdk.git
+cd siyi_sdk
 pip install -e .
 ```
 
@@ -107,6 +107,10 @@ The SDK includes a modern web-based control interface for the gimbal, camera, an
 - **Gimbal**: Virtual joystick and real-time attitude display.
 - **Camera**: Photo/Video control, Zoom, Focus, and Encoding settings.
 - **Media**: Browse and download files from the TF card.
+
+### Dashboard Preview
+
+![Web UI Dashboard](docs/images/webui.png)
 
 ### Running the Web UI
 
