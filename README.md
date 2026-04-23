@@ -387,4 +387,4 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 
 ## Support
 
-For issues, feature requests, or questions, please open an issue on [GitHub](https://github.com/mzahana/siyi-sdk/issues).
+For issues, feature requests, or questions, please open an issue on [GitHub](https://github.com/mzahana/siyi_sdk/issues).
