@@ -4,7 +4,7 @@
 [![codecov](https://codecov.io/gh/mzahana/siyi_sdk/branch/siyi-sdk-v2/graph/badge.svg)](https://codecov.io/gh/mzahana/siyi_sdk/tree/siyi-sdk-v2)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**If you like this project and find it useful, please give it a star!**
+**🌟 If you like this project and find it useful, please give it a star! ⭐**
 
 Async Python SDK for the SIYI Gimbal Camera External SDK Protocol v0.1.1.
 
